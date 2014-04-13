@@ -1749,7 +1749,7 @@ YVsUCTAZExEAOw==
     },
     shim : {
         jstree : {
-            export : "jstree"
+            'export' : "jstree"
         }
     }
 });
@@ -1757,12 +1757,13 @@ YVsUCTAZExEAOw==
 require(['jQueryNoConflict', 'jstree'], function ($, jstree) {
 
     var xwikiExplorer = xwikiExplorer || {};
+    var enc = encodeURIComponent;
 
     xwikiExplorer = function () {
         var that = this;
         this.childrenIcon = "$xwiki.getSkinFile('icons/silk/page_white.png')";
-        this.baseURL = "../../..";
-        this.wiki = "xwiki";
+        this.baseURL = XWiki.contextPath;
+        this.wiki = XWiki.currentWiki;
         var reqJson = "?media=json";
 
         this.init = function (element) {
@@ -1798,7 +1799,7 @@ require(['jQueryNoConflict', 'jstree'], function ($, jstree) {
                                     parsedJson[i].children = true;
                                     parsedJson[i].type = "root";
                                     parsedJson[i].a_attr = {
-                                        "href" : that.baseURL + "/bin/view/Main/SpaceIndex?space=" + parsedJson[i].text
+                                        "href" : that.baseURL + "/bin/view/Main/SpaceIndex?space=" + enc(parsedJson[i].text)
                                     }
                                 })
                                 //or xwiki pages
@@ -1807,7 +1808,7 @@ require(['jQueryNoConflict', 'jstree'], function ($, jstree) {
                                 //check if the xwiki page has children
                                 $.each(parsedJson, function (i, item) {
                                     parsedJson[i].a_attr = {
-                                        "href" : that.baseURL + "/bin/view/" + parsedJson[i].space + "/" + parsedJson[i].text
+                                        "href" : that.baseURL + "/bin/view/" + enc(parsedJson[i].space) + "/" + enc(parsedJson[i].text)
                                     }
                                     if (hasChildren(parsedJson[i].space, parsedJson[i].text) == true) {
                                         parsedJson[i].children = true;
@@ -1849,7 +1850,7 @@ require(['jQueryNoConflict', 'jstree'], function ($, jstree) {
                         var pageName = prompt('Name of the new page');
                         var dupPage = false;
                         $.ajax({
-                            url : that.baseURL + '/rest/wikis/' + that.wiki + '/spaces/' + node.original.space + '/pages/' + pageName,
+                            url : that.baseURL + '/rest/wikis/' + that.wiki + '/spaces/' + enc(node.original.space) + '/pages/' + enc(pageName),
                             type : 'GET',
                             async : false,
                             success : function (data) {
@@ -1874,13 +1875,13 @@ require(['jQueryNoConflict', 'jstree'], function ($, jstree) {
                                 space = node.original.text;
                             }
                             $.ajax({
-                                url : that.baseURL + '/rest/wikis/' + that.wiki + '/spaces/' + space + '/pages/' + pageName,
+                                url : that.baseURL + '/rest/wikis/' + that.wiki + '/spaces/' + enc(space) + '/pages/' + enc(pageName),
                                 type : 'PUT',
-                                data : 'title=' + pageName + "&amp;parent=" + parent,
+                                data : { 'title' : pageName, 'parent' : parent },
                                 async : false,
                                 success : function (data) {
                                     alert("The page was created successfully");
-                                    $('#tree').jstree('refresh', $('#node_' + node.id));
+                                    $('#tree').jstree('refresh', $(document.getElementById('node_' + node.id)));
                                 },
                                 error : function (XMLHttpRequest, textStatus, errorThrown) {
                                     alert("Status: " + textStatus + " / Error: " + errorThrown);
@@ -1900,12 +1901,12 @@ require(['jQueryNoConflict', 'jstree'], function ($, jstree) {
                     "action" : function (obj) {
                         if (confirm('Are you sure you wish to move this document to the recycle bin?')) {
                             $.ajax({
-                                url : that.baseURL + '/rest/wikis/' + that.wiki + '/spaces/' + node.original.space + '/pages/' + node.text,
+                                url : that.baseURL + '/rest/wikis/' + that.wiki + '/spaces/' + enc(node.original.space) + '/pages/' + enc(node.text),
                                 type : 'DELETE',
                                 async : false,
                                 success : function (data) {
                                     alert("The document has been deleted.");
-                                    $('#tree').jstree('refresh', $('#node_' + node.id));
+                                    $('#tree').jstree('refresh', $(document.getElementById('node_' + node.id)));
                                 },
                                 error : function (XMLHttpRequest, textStatus, errorThrown) {
                                     alert("Status: " + textStatus + " / Error: " + errorThrown);
@@ -1927,7 +1928,7 @@ require(['jQueryNoConflict', 'jstree'], function ($, jstree) {
         function hasChildren(space, page) {
             var hasChildren = false;
             $.ajax({
-                url : that.baseURL + '/rest/wikis/' + that.wiki + '/spaces/' + space + '/pages/' + page + '/children' + reqJson,
+                url : that.baseURL + '/rest/wikis/' + that.wiki + '/spaces/' + enc(space) + '/pages/' + enc(page) + '/children' + reqJson,
                 dataType : 'json',
                 async : false,
                 success : function (data) {
@@ -1947,13 +1948,13 @@ require(['jQueryNoConflict', 'jstree'], function ($, jstree) {
                 //get fullPageName from node.id
                 var fullPageName = node.id.slice(slice, node.id.length);
                 var hql = "where doc.parent = '" + fullPageName + "' and doc.name != 'WebHome' and doc.language ='' order by doc.name";
-                var url = that.baseURL + "/rest/wikis/" + that.wiki + "/query?q=" + encodeURIComponent(hql) + "&amp;type=hql&amp;media=json";
+                var url = that.baseURL + "/rest/wikis/" + that.wiki + "/query?q=" + enc(hql) + "&amp;type=hql&amp;media=json";
             } else {
                 //get space from node.id
                 var space = node.id.slice(slice, node.id.length);
                 //Query gets documents with parent pages which no longer exist, documents with no parent page and &lt;space&gt;.WebHome, documents with parents in other spaces are excluded
                 var hql = "where doc.space = '" + space + "' and (doc.parent not in (SELECT DISTINCT doc.parent.fullName FROM XWikiDocument doc where doc.space = '" + space + "') or doc.name ='WebHome' or doc.parent ='')and doc.name not in (SELECT DISTINCT doc.name FROM XWikiDocument doc where doc.parent not like '" + space + "%25' and doc.space = '" + space + "' and doc.parent !='' and doc.name !='WebHome') and doc.language ='' order by doc.name";
-                var url = that.baseURL + "/rest/wikis/" + that.wiki + "/query?q=" + encodeURIComponent(hql) + "&amp;type=hql&amp;media=json";
+                var url = that.baseURL + "/rest/wikis/" + that.wiki + "/query?q=" + enc(hql) + "&amp;type=hql&amp;media=json";
             }
             return url;
         }
