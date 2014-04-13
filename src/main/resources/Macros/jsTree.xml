@@ -1947,7 +1947,7 @@ require(['jQueryNoConflict', 'jstree'], function ($, jstree) {
             if (node.id.indexOf(".") != -1) {
                 //get fullPageName from node.id
                 var fullPageName = node.id.slice(slice, node.id.length);
-                var hql = "where doc.parent = '" + fullPageName + "' and doc.name != 'WebHome' and doc.language ='' order by doc.name";
+                var hql = "where doc.parent = '" + enc(fullPageName.replace(/'/g, "''")) + "' and doc.name != 'WebHome' and doc.language ='' order by doc.name";
                 var url = that.baseURL + "/rest/wikis/" + that.wiki + "/query?q=" + enc(hql) + "&amp;type=hql&amp;media=json";
             } else {
                 //get space from node.id
